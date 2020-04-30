@@ -1,8 +1,8 @@
 'use strict'
 const jsonp = require('../jsonp')
-module.exports = axios => ({url, data, methods, headers, dataType, jsonp}) => {
+module.exports = axios => ({url, data, methods, headers, dataType}) => {
     if(dataType && dataType.toUpperCase() === 'JSONP'){
-        return jsonp({url, data, jsonp})
+        return jsonp({url, data})
     }
     methods = methods || 'get'
     axios.defaults.withCredentials = true // cookie跨域

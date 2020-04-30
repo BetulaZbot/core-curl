@@ -1,33 +1,34 @@
-let i = 0
 
-module.exports = (params) => new Promise((resolve, reject) => {
-    i++
-    let {data, url, timeout, jsonp} = params || {}
-    url = url || window.location.href
-    const joinTag = /\?/.test(url) ? '&' : '?'
-    const script = document.createElement('script')
-    const $header = document.getElementsByTagName('head')[0]
-    let callback = jsonp || ('callback' + i)
-    let param = [url]
-    let arr = []
-    Object.prototype.toString.apply(data) === '[object Object]' && Object.keys(data).forEach(name => arr.push(encodeURIComponent(name) + '=' + encodeURIComponent(typeof data[name] == 'object' ? JSON.stringify(data[name]) : data[name])))
-    arr.push(`callback=${callback}`)
-    param.push(arr.join('&'))
-    script.src = param.join(joinTag)
-    $header.appendChild(script)
-    window[callback] = json => {
-        $header.removeChild(script)
-        clearTimeout(script.timer)
-        delete window[callback]
-        // console.log(json)
-        resolve(json) // reason: you can
-    }
-    if(timeout){
-        script.timer = setTimeout(() => {
-            clearTimeout(script.timer)
+module.exports = ({ url, data }) => {
+    return new Promise((resolve) => {
+        if (!url)
+            throw new Error('url is necessary')
+        const callback = 'CALLBACK' + Math.random().toString().substr(9, 18)
+        // const callback = 'cb_callback'
+        const JSONP = document.createElement('script')
+        JSONP.setAttribute('type', 'text/javascript')
+
+        const headEle = document.getElementsByTagName('head')[0]
+
+        let ret = '';
+        if (data) {
+            if (typeof data === 'string')
+                ret = '&' + data;
+            else if (typeof data === 'object') {
+                for (let key in data)
+                    ret += '&' + key + '=' + encodeURIComponent(data[key]);
+            }
+            ret += '&_time=' + Date.now();
+        }
+        JSONP.src = `${url}?callback=${callback}${ret}`;
+
+        window[callback] = function (r) {
+            resolve(r)
+            headEle.removeChild(JSONP)
             delete window[callback]
-            $header.removeChild(script)
-            reject(new Error('请求超时'))
-        }, timeout)
-    }
-})
+        }
+
+        headEle.appendChild(JSONP)
+    });
+
+}
